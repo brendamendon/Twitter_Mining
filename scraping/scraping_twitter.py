@@ -1,5 +1,5 @@
 from bs4 import BeautifulSoup
-from csv import DictWriter
+import csv
 import pickle
 from selenium import webdriver
 from selenium.webdriver.support.ui import WebDriverWait
@@ -70,19 +70,16 @@ class Acesso:
 
 class Output:
 
-    def write_csv(nome, user, tweet_date, tweet_text):
+    def write_csv(nome, user, tweet_date, tweet_text,emojis):
 
         try:
-            # Abre um arquivo em modo escrita e leitura            
-            with open(r"bases\tweets.csv", "a+", encoding='utf-8') as csv_file:
-                # Definindo os nomes dos campos para cada coluna
-                fieldnames = ['Nome', 'Username', 'Data', 'Texto']
+            # Abre o arquivo em modo de escrita
+            with open(r"bases\tweets.csv", "a", encoding='utf-8', newline='') as csv_file:
+                # Cria o objeto writer
+                writer = csv.writer(csv_file)
 
-                # Cria um dicionário com as linhas do csv
-                writer = DictWriter(csv_file, fieldnames=fieldnames)
-
-                # Grava os dados no arquivo csv
-                writer.writerow({'Nome': nome, 'Username': user, 'Data': tweet_date, 'Texto': tweet_text})
+                # Grava os dados no arquivo csv como uma nova linha
+                writer.writerow([nome, user, tweet_date, tweet_text, emojis])
 
         except Exception as e:
             print("Não foi possível criar o csv!, vide erro:\n\n {}".format(e))
@@ -135,7 +132,7 @@ class Scrapping:
                     try:
                         # Capturando o texto do tweet
                         tweet_text = c.find('div', {'data-testid': 'tweetText'}).text
-                        tweet_text = tweet_text.replace('\n', ' ').replace('\r', ' ')
+                        tweet_text = tweet_text.replace('\n', '').replace('\r', ' ')
 
                         # Capturando o nome e usuário da pessoa que fez o tweet
                         tweet_name = c.find('div', {'data-testid': 'User-Name'}).text.strip()
@@ -148,14 +145,23 @@ class Scrapping:
                         date_elem = c.find('time')
                         tweet_date = date_elem.text.strip()
 
+                        # Extrair os emojis do tweet
+                        emojis = []
+                        emoji_tags = c.find_all('img')
+                        for emoji_tag in emoji_tags:
+                            emoji = emoji_tag.get('alt')
+                            if emoji and not emoji.startswith('Image'):
+                                emojis.append(emoji)
+
                         print(f"Nome: {nome}")
                         print(f"User: {user}")
                         print(f"Data: {tweet_date}")
                         print(f"Tweet: {tweet_text}")
+                        print(f"Emojis: {emojis}")
                         print("----------------------")
 
                         try:
-                            Output.write_csv(nome, user, tweet_date, tweet_text)
+                            Output.write_csv(nome, user, tweet_date, tweet_text, emojis)
                         except:
                             print('csv error')
 
@@ -175,7 +181,7 @@ class Scrapping:
 driver_type = 2
 
 # Lista de strings a serem buscadas nos tweets
-word = 'TSLA'
+word = 'PANW'
 
 # Diretório do arquivo .pkl com os cookies de autenticação de login
 diretorio = r'pkl'
